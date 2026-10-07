@@ -153,9 +153,13 @@ app.get('/api/stats', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+// อยู่หลัง nginx → ผูกกับ 127.0.0.1 เท่านั้น ไม่ให้เข้าพอร์ตนี้ตรงจากภายนอก
+// ตั้ง HOST=0.0.0.0 ถ้าต้องการให้เข้าถึงได้ทุก interface
+const HOST = process.env.HOST || '0.0.0.0';
+
+app.listen(PORT, HOST, () => {
   console.log('========================================');
-  console.log(`🌐 KEY Auto พร้อมใช้งาน: http://localhost:${PORT}`);
+  console.log(`🌐 KEY Auto พร้อมใช้งาน: http://${HOST}:${PORT}`);
   console.log(`⚙️  รันพร้อมกัน: ${CONCURRENCY} งาน | timeout: ${JOB_TIMEOUT_MS / 1000} วิ`);
   console.log(`♻️  ใช้ Chrome ซ้ำ และรีไซเคิลทุก ${RECYCLE_AFTER} งาน`);
   console.log(`💤 ปิด Chrome อัตโนมัติเมื่อว่าง ${Math.round(IDLE_CLOSE_MS / 1000)} วิ`);

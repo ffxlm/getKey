@@ -19,6 +19,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
+        // ผูกกับ localhost เท่านั้น — บังคับให้เข้าผ่าน nginx (ปิดการเข้าพอร์ต 3000 ตรงจากภายนอก)
+        HOST: '127.0.0.1',
         // ตำแหน่ง Chrome บน VPS (google-chrome-stable)
         CHROME_PATH: '/usr/bin/google-chrome',
         // อยู่หลัง nginx → เปิด trust proxy
