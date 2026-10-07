@@ -130,6 +130,45 @@ async function recycleIfNeeded() {
   }
 }
 
+// ===== โหมด debug: เก็บ URL เต็ม + สภาพหน้าเว็บ + แคปหน้าจอ =====
+// เปิดด้วย DEBUG_SOLVER=1 (ดูรายละเอียดทุกขั้นตอนใน pm2 logs)
+const DEBUG = process.env.DEBUG_SOLVER === '1' || process.env.DEBUG_SOLVER === 'true';
+const DEBUG_DIR = process.env.DEBUG_DIR || '/tmp/opencode';
+
+/** พิมพ์ข้อความ/ปุ่ม/ลิงก์ทั้งหมดในหน้าปัจจุบัน (เฉพาะโหมด debug) */
+async function dumpPage(page, tag, log) {
+  if (!DEBUG) return;
+  try {
+    const info = await page.evaluate(() => {
+      const text = document.body ? document.body.innerText : '';
+      const buttons = Array.from(document.querySelectorAll('button')).map((b) => ({
+        text: b.innerText.trim().slice(0, 80),
+        disabled: b.disabled,
+        cls: (b.className || '').toString().slice(0, 60)
+      }));
+      const links = Array.from(document.querySelectorAll('a')).map((a) => ({
+        text: a.innerText.trim().slice(0, 50),
+        href: (a.href || '').slice(0, 120)
+      }));
+      return { url: location.href, text: text.slice(0, 1200), buttons, links };
+    });
+    log(`🔍 [${tag}] url = ${info.url}`);
+    log(`🔍 [${tag}] text = ${JSON.stringify(info.text)}`);
+    log(`🔍 [${tag}] buttons = ${JSON.stringify(info.buttons)}`);
+    log(`🔍 [${tag}] links = ${JSON.stringify(info.links)}`);
+  } catch (e) {
+    log(`🔍 [${tag}] dump error: ${e.message}`);
+  }
+}
+
+/** แคปหน้าจอ (เฉพาะโหมด debug) */
+async function debugShot(page, tag) {
+  if (!DEBUG) return;
+  try {
+    await page.screenshot({ path: `${DEBUG_DIR}/solver_${tag}.png`, fullPage: true });
+  } catch (e) {}
+}
+
 function decodeBase64(str) {
   try {
     return Buffer.from(decodeURIComponent(str), 'base64').toString('utf-8');
@@ -247,7 +286,7 @@ async function solvePlatoboost(startUrl, options = {}) {
 
     while (stepCount < maxSteps && !finalKey) {
       stepCount++;
-      log(`[ขั้นตอนที่ ${stepCount}] เปิดหน้า: ${currentUrl.slice(0, 70)}...`);
+      log(`[ขั้นตอนที่ ${stepCount}] เปิดหน้า: ${DEBUG ? currentUrl : currentUrl.slice(0, 70) + '...'}`);
 
       // ✅ เปลี่ยนจาก networkidle2 → domcontentloaded (ไม่รอฟรี)
       try {
@@ -268,6 +307,9 @@ async function solvePlatoboost(startUrl, options = {}) {
       }, READY_TIMEOUT_MS);
 
       if (!ready) log('หน้าเว็บโหลดช้ากว่าปกติ กำลังไปต่อ...');
+
+      await dumpPage(page, `step${stepCount}-loaded`, log);
+      await debugShot(page, `step${stepCount}-loaded`);
 
       // ลองคลิกหลายครั้ง เพราะปุ่มจะกดได้หลังนับถอยหลังเสร็จ
       let advanced = false;
@@ -293,6 +335,9 @@ async function solvePlatoboost(startUrl, options = {}) {
             const s = await readPage(page);
             return s.text.includes('Successfully whitelisted') || s.text.includes('minutes left');
           }, READY_TIMEOUT_MS);
+
+          await dumpPage(page, `step${stepCount}-afterContinue`, log);
+          await debugShot(page, `step${stepCount}-afterContinue`);
 
           advanced = true;
           break;
