@@ -5,6 +5,14 @@ const { solvePlatoboost, isValidUrl, closeBrowser, RECYCLE_AFTER, IDLE_CLOSE_MS 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ===== ตั้งค่า reverse proxy =====
+// อยู่หลัง nginx → อ่าน IP จริงของลูกค้าจาก X-Forwarded-For (ไม่งั้นทุกคนจะนับเป็น 127.0.0.1)
+// ตั้ง TRUST_PROXY=0 ถ้าเปิดพอร์ตนี้ให้เข้าถึงโดยตรง (ไม่ผ่าน proxy)
+const TRUST_PROXY = process.env.TRUST_PROXY ?? '1';
+if (TRUST_PROXY !== '0' && TRUST_PROXY !== 'false') {
+  app.set('trust proxy', /^\d+$/.test(TRUST_PROXY) ? Number(TRUST_PROXY) : TRUST_PROXY);
+}
+
 // ===== ตั้งค่า =====
 const CONCURRENCY = 1;              // รันทีละงาน (ปลอดภัยกับ RAM น้อย)
 const JOB_TIMEOUT_MS = 90 * 1000;   // งานละไม่เกิน 90 วินาที
