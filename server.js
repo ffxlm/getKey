@@ -30,15 +30,16 @@ const activeUsers = new Map(); // ip -> lastSeen (สำหรับนับอ
 const knownUsers = new Set();  // ip ทั้งหมดที่เคยใช้
 
 app.use(express.json());
-app.use(express.static(__dirname));
 
-// นับผู้ใช้งานจากทุก request
+// นับผู้ใช้งานจากทุก request (วางก่อน static เพื่อให้นับการเปิดหน้าเว็บด้วย ไม่ใช่แค่ API)
 app.use((req, res, next) => {
   const ip = req.ip || req.socket.remoteAddress || 'unknown';
   activeUsers.set(ip, Date.now());
   knownUsers.add(ip);
   next();
 });
+
+app.use(express.static(__dirname));
 
 // ล้างผู้ใช้ที่หลุดออนไลน์เป็นระยะ
 setInterval(() => {
