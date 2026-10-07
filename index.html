@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KEY Auto — ดึง Platoboost / Delta KEY</title>
+  <meta name="description" content="เว็บดึง KEY Platoboost / Delta พร้อมระบบคิว" />
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg2: #121933;
+      --card: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.10);
+      --text: #e8ecf6;
+      --muted: #8b96b5;
+      --primary: #6d5efc;
+      --primary2: #22d3ee;
+      --ok: #34d399;
+      --warn: #fbbf24;
+      --err: #f87171;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", "Noto Sans Thai", system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(900px 500px at 10% -10%, rgba(109, 94, 252, 0.28), transparent 60%),
+        radial-gradient(800px 500px at 100% 0%, rgba(34, 211, 238, 0.18), transparent 55%),
+        linear-gradient(160deg, var(--bg), var(--bg2));
+      display: flex;
+      justify-content: center;
+      padding: 28px 16px 56px;
+    }
+
+    .wrap { width: 100%; max-width: 720px; }
+
+    header { text-align: center; margin-bottom: 22px; }
+
+    .logo {
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(90deg, var(--primary), var(--primary2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      display: inline-block;
+    }
+
+    header p { color: var(--muted); margin: 8px 0 0; font-size: 14px; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .stat {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 10px;
+      text-align: center;
+    }
+
+    .stat .num { font-size: 20px; font-weight: 700; }
+    .stat .lbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .stat.online .num { color: var(--ok); }
+    .stat.running .num { color: var(--warn); }
+    .stat.queued .num { color: var(--primary2); }
+    .stat.success .num { color: var(--ok); }
+
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+
+    .input-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    input[type="url"], input[type="text"] {
+      flex: 1 1 320px;
+      min-width: 0;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.25);
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(109, 94, 252, 0.25); }
+    input::placeholder { color: #5b6685; }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px 22px;
+      color: #fff;
+      background: linear-gradient(90deg, var(--primary), #8b7bff);
+      transition: transform 0.08s, opacity 0.15s;
+    }
+
+    button:hover { opacity: 0.92; }
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    button.ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 16px;
+      font-size: 13px;
+    }
+
+    .hint { color: var(--muted); font-size: 12px; margin-top: 10px; }
+
+    .result { margin-top: 20px; display: none; }
+    .result.show { display: block; animation: fade 0.25s ease; }
+
+    @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.22);
+      font-size: 14px;
+    }
+
+    .spinner {
+      width: 16px; height: 16px; flex: none;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      border-top-color: var(--primary2);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+    .dot.queued { background: var(--primary2); }
+    .dot.running { background: var(--warn); }
+    .dot.done { background: var(--ok); }
+    .dot.error { background: var(--err); }
+
+    .keybox {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(52, 211, 153, 0.45);
+      background: rgba(52, 211, 153, 0.08);
+      word-break: break-all;
+    }
+
+    .keybox code { flex: 1; font-size: 16px; font-weight: 700; color: #d7ffee; letter-spacing: 0.5px; }
+
+    .errbox {
+      margin-top: 12px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(248, 113, 113, 0.45);
+      background: rgba(248, 113, 113, 0.10);
+      color: #ffd7d7;
+      font-size: 14px;
+    }
+
+    .log {
+      margin-top: 12px;
+      max-height: 150px;
+      overflow-y: auto;
+      font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
+      font-size: 12px;
+      color: var(--muted);
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      white-space: pre-wrap;
+    }
+
+    .log:empty { display: none; }
+
+    footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 22px; }
+
+    /* Responsive application layout */
+    :root {
+      --bg: #0c0f16;
+      --bg2: #10141e;
+      --card: #141923;
+      --border: #272d3b;
+      --text: #f0f2f8;
+      --muted: #9ba5b9;
+      --primary: #a38aff;
+      --primary2: #b9a5ff;
+      --radius: 20px;
+    }
+    body { display: block; padding: 0; background: radial-gradient(ellipse at 65% 25%, #201b3638, transparent 55%), var(--bg); line-height: 1.65; }
+    button, input { font-family: inherit; }
+    a { color: inherit; text-decoration: none; }
+    svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 32px; }
+    header { height: 92px; display: flex; align-items: center; justify-content: space-between; margin: 0; border-bottom: 1px solid var(--border); text-align: left; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; color: #c3adff; background: #a38aff18; border: 1px solid #a38aff32; }
+    .logo { font-size: 22px; color: var(--text); background: none; letter-spacing: -.7px; }
+    .logo span { color: var(--primary); }
+    .nav { display: flex; gap: 28px; align-items: center; font-size: 13px; color: var(--muted); }
+    .nav a:hover { color: var(--text); }
+    .discord { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: #c3adff; background: #a38aff10; border: 1px solid #a38aff32; border-radius: 999px; padding: 7px 14px; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+    .discord svg { width: 16px; height: 16px; fill: currentColor; stroke: none; }
+    .discord:hover { color: #fff; background: #a38aff22; border-color: #a38aff55; }
+    main { padding: 58px 0 0; }
+    .eyebrow { display: inline-flex; gap: 8px; align-items: center; color: #c1aaff; font-size: 11px; font-weight: 600; letter-spacing: 1.8px; }
+    .eyebrow svg { width: 15px; height: 15px; }
+    h1 { font-size: clamp(32px, 4.3vw, 48px); line-height: 1.3; letter-spacing: -1.5px; margin: 14px 0; font-weight: 750; }
+    h1 span { color: #bda6ff; }
+    .intro { margin: 0; color: var(--muted); font-size: 14px; max-width: 590px; }
+    .stats { margin: 32px 0; gap: 14px; }
+    .stat { padding: 19px 20px; text-align: left; border-radius: 14px; background: #141923b3; position: relative; }
+    .stat .num { font-size: 29px; line-height: 1.25; font-variant-numeric: tabular-nums; color: var(--text); }
+    .stat .lbl { font-size: 12px; margin-top: 7px; }
+    .stat-icon { position: absolute; right: 18px; top: 21px; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; }
+    .stat-icon svg { width: 17px; height: 17px; }
+    .online .stat-icon { color: #7dbbff; background: #7dbbff12; }
+    .running .stat-icon { color: #f3c775; background: #f3c77512; }
+    .queued .stat-icon { color: #ba9fff; background: #ba9fff12; }
+    .success .stat-icon { color: #6ddbb0; background: #6ddbb012; }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 22px; align-items: start; }
+    .card { padding: 28px; box-shadow: 0 12px 35px #00000012; backdrop-filter: none; min-width: 0; }
+    .card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px; }
+    .card-heading { display: flex; gap: 12px; align-items: center; }
+    .heading-icon { color: var(--primary); background: #a38aff12; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; }
+    h2 { font-size: 18px; margin: 0; font-weight: 650; }
+    .subtitle { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
+    .badge { border: 1px solid #a38aff35; border-radius: 6px; padding: 3px 8px; font-size: 10px; color: #c3adff; letter-spacing: .5px; }
+    label { color: #d1d6e2; font-size: 13px; margin-bottom: 10px; }
+    .input-row { display: block; }
+    .input-shell { position: relative; }
+    .input-shell svg { position: absolute; top: 18px; left: 16px; width: 18px; height: 18px; color: #737f98; pointer-events: none; }
+    input[type="url"] { width: 100%; background: #0d111a; padding: 16px 16px 16px 44px; font-size: 13px; border-radius: 10px; }
+    input::placeholder { color: #79849c; }
+    .hint { font-size: 11px; line-height: 1.8; margin-top: 10px; }
+    button[type="submit"] { width: 100%; margin-top: 22px; background: #aa8cf5; color: #171023; padding: 14px 20px; border-radius: 10px; box-shadow: 0 4px 18px #a38aff16; }
+    button:hover:not(:disabled) { opacity: 1; filter: brightness(1.08); }
+    button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+    .form-note { display: flex; align-items: center; justify-content: center; gap: 7px; color: var(--muted); font-size: 11px; margin: 14px 0 0; }
+    .form-note svg { width: 14px; height: 14px; }
+    .supported { border-top: 1px solid var(--border); margin-top: 24px; padding-top: 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
+    .supported > span { color: var(--muted); font-size: 11px; margin-right: auto; }
+    .platform { color: #b9c1d3; background: #ffffff04; border: 1px solid var(--border); border-radius: 6px; padding: 3px 9px; font-size: 11px; }
+    .guide { padding: 24px; }
+    .guide h2 { font-size: 15px; }
+    .steps { padding: 0; margin: 22px 0; list-style: none; display: grid; gap: 23px; }
+    .steps li { display: flex; gap: 12px; }
+    .step-number { width: 26px; height: 26px; border: 1px solid #a38aff30; border-radius: 8px; display: grid; place-items: center; color: #bda6ff; font-size: 11px; flex-shrink: 0; background: #a38aff08; }
+    .steps strong { display: block; font-size: 13px; font-weight: 500; }
+    .steps p { margin: 4px 0 0; font-size: 11px; color: var(--muted); }
+    .notice { padding: 13px; background: #a38aff08; border: 1px solid #a38aff18; border-radius: 10px; font-size: 11px; color: #b5abc9; }
+    .notice strong { display: block; margin-bottom: 4px; color: #d0bee9; font-weight: 500; }
+    .faq { margin-top: 34px; }
+    .faq h2 { font-size: 15px; margin-bottom: 14px; }
+    .faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    details { background: #14192380; border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+    summary { cursor: pointer; font-size: 12px; color: #ced4e2; }
+    details p { font-size: 12px; color: var(--muted); margin: 12px 0 0; }
+    .status { background: #0d111a; font-size: 13px; }
+    .status span { overflow-wrap: anywhere; }
+    .keybox { flex-wrap: wrap; }
+    .keybox code { min-width: 0; overflow-wrap: anywhere; font-size: 14px; }
+    .log { overflow-wrap: anywhere; }
+    footer { margin-top: 42px; padding: 22px 0; border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: 12px; text-align: left; font-size: 11px; }
+    .footer-brand { color: #b2bbcf; }
+    @media (max-width: 900px) { .workspace { grid-template-columns: minmax(0, 1fr) 270px; gap: 16px; } .card { padding: 22px; } .stat { padding: 16px; } .stat-icon { right: 12px; } }
+    @media (max-width: 720px) { .wrap { padding: 0 22px; } header { height: 76px; } .nav { gap: 18px; } main { padding-top: 36px; } .workspace { grid-template-columns: 1fr; } .stats { grid-template-columns: repeat(2, 1fr); margin: 26px 0; } .guide { margin-top: 2px; } .steps { gap: 18px; } }
+    @media (max-width: 420px) { .wrap { padding: 0 16px; } .nav > a:not(.discord) { display: none; } .discord span { display: none; } .discord { padding: 8px; } .logo { font-size: 20px; } h1 { font-size: 32px; } .intro { font-size: 13px; } .card { padding: 20px; } .badge { display: none; } .faq-grid { grid-template-columns: 1fr; } footer { flex-direction: column; gap: 4px; } .stats { gap: 10px; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a class="brand" href="#" aria-label="KEY Auto หน้าหลัก">
+        <span class="brand-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="4"/><path d="m11 11 9 9m-3-3 3-3m-6 0 3-3"/></svg></span>
+        <span class="logo">KEY<span>Auto</span></span>
+      </a>
+      <nav class="nav" aria-label="เมนูหลัก">
+        <a href="#how-to">วิธีใช้งาน</a>
+        <a class="discord" id="discord-link" href="https://discord.gg/N7Kuayuzxb" target="_blank" rel="noopener noreferrer" aria-label="เข้าร่วม Community Discord">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.32 4.37a19.8 19.8 0 0 0-4.89-1.52.07.07 0 0 0-.08.04c-.21.37-.44.86-.61 1.25a18.3 18.3 0 0 0-5.48 0c-.18-.4-.41-.88-.62-1.25a.08.08 0 0 0-.08-.04A19.7 19.7 0 0 0 3.68 4.37a.07.07 0 0 0-.03.03C.53 9.05-.32 13.58.1 18.06a.08.08 0 0 0 .03.05 19.9 19.9 0 0 0 6 3.03.08.08 0 0 0 .08-.03c.46-.63.87-1.3 1.23-1.99a.08.08 0 0 0-.04-.11 13.1 13.1 0 0 1-1.87-.89.08.08 0 0 1 0-.13l.37-.29a.07.07 0 0 1 .08-.01c3.93 1.79 8.18 1.79 12.06 0a.07.07 0 0 1 .08.01c.12.1.25.2.37.29a.08.08 0 0 1 0 .13 12.3 12.3 0 0 1-1.88.89.08.08 0 0 0-.04.11c.36.7.77 1.36 1.22 1.99a.08.08 0 0 0 .08.03 19.8 19.8 0 0 0 6-3.03.08.08 0 0 0 .04-.05c.5-5.18-.84-9.68-3.55-13.66a.06.06 0 0 0-.03-.03ZM8.02 15.33c-1.18 0-2.16-1.08-2.16-2.42 0-1.33.96-2.42 2.16-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.34-.96 2.42-2.16 2.42Zm7.97 0c-1.18 0-2.16-1.08-2.16-2.42 0-1.33.96-2.42 2.16-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.34-.95 2.42-2.16 2.42Z"/></svg>
+          <span>Community Discord</span>
+        </a>
+      </nav>
+    </header>
+
+    <main>
+      <div class="eyebrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 10-12h-7z"/></svg> YOUR KEY, SIMPLIFIED</div>
+      <h1>รับ KEY ของคุณ<br>ให้เป็นเรื่อง<span>ง่ายกว่าที่เคย.</span></h1>
+      <p class="intro">วางลิงก์ แล้วให้เราจัดการที่เหลือ ดึง KEY Platoboost / Delta<br>พร้อมระบบคิวอัตโนมัติ และติดตามสถานะได้ในหน้าเดียว</p>
+      <div class="stats" aria-label="สถิติการใช้งาน">
+        <div class="stat online"><span class="stat-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2m2-15a3 3 0 0 1 0 6m1 3a5 5 0 0 1 3 4v2"/></svg></span><div class="num" id="s-online">—</div><div class="lbl">ผู้ใช้ออนไลน์</div></div>
+        <div class="stat running"><span class="stat-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 10-12h-7z"/></svg></span><div class="num" id="s-running">—</div><div class="lbl">กำลังทำงาน</div></div>
+        <div class="stat queued"><span class="stat-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg></span><div class="num" id="s-queued">—</div><div class="lbl">งานที่รอในคิว</div></div>
+        <div class="stat success"><span class="stat-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="m8 12 3 3 5-6"/></svg></span><div class="num" id="s-success">—</div><div class="lbl">ดึง KEY สำเร็จ</div></div>
+      </div>
+      <div class="workspace">
+      <section class="card" aria-labelledby="form-heading">
+      <div class="card-top">
+        <div class="card-heading"><span class="heading-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="4"/><path d="m11 11 9 9m-3-3 3-3m-6 0 3-3"/></svg></span><div><h2 id="form-heading">ดึง KEY อัตโนมัติ</h2><p class="subtitle">เริ่มต้นด้วยลิงก์จากหน้า Key System</p></div></div>
+        <span class="badge">AUTO QUEUE</span>
+      </div>
+      <form id="form">
+        <label for="url">ลิงก์ Platoboost / Platorelay</label>
+        <div class="input-row">
+          <div class="input-shell"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 13 4-4m-6 6-2 2a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m2 2 2-2a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0" transform="translate(2 0)"/></svg><input id="url" type="url" inputmode="url" autocomplete="off" aria-describedby="url-hint" spellcheck="false"
+                 placeholder="https://auth.platorelay.com/a?d=..." required /></div>
+          <div class="hint" id="url-hint">วางลิงก์เต็มจากหน้า Key System ของ Platoboost หรือ Platorelay</div>
+          <button type="submit" id="submit">ดึง KEY</button>
+        </div>
+        <p class="form-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/><path d="m8 12 3 3 5-6"/></svg>ระบบจัดคิวให้อัตโนมัติ ไม่ต้องส่งลิงก์ซ้ำ</p>
+      </form>
+
+      <div class="result" id="result" aria-live="polite" aria-atomic="true">
+        <div class="status" id="status" role="status"></div>
+        <div id="extra"></div>
+        <div class="log" id="log"></div>
+      </div>
+      <div class="supported"><span>รองรับ Key System</span><div class="platform">Platoboost</div><div class="platform">Platorelay</div><div class="platform">Delta</div></div>
+      </section>
+      <aside class="card guide" id="how-to" aria-labelledby="guide-heading">
+        <h2 id="guide-heading">เริ่มต้นใน 3 ขั้นตอน</h2>
+        <ol class="steps">
+          <li><span class="step-number">01</span><div><strong>คัดลอกลิงก์</strong><p>เปิดหน้า Key System แล้วคัดลอกลิงก์เต็มจากแถบที่อยู่</p></div></li>
+          <li><span class="step-number">02</span><div><strong>วางลิงก์และเริ่มทำงาน</strong><p>กด “ดึง KEY” ระบบจะจัดคิวและแสดงสถานะให้อัตโนมัติ</p></div></li>
+          <li><span class="step-number">03</span><div><strong>คัดลอก KEY ไปใช้งาน</strong><p>เมื่อสำเร็จ กดคัดลอก KEY แล้วนำไปใช้งานได้เลย</p></div></li>
+        </ol>
+        <div class="notice"><strong>รู้ไว้ก่อนเริ่ม</strong>ระบบประมวลผลทีละงาน ระยะเวลารอขึ้นอยู่กับจำนวนคิว กรุณาเปิดหน้านี้ไว้จนเสร็จ</div>
+      </aside>
+      </div>
+      <section class="faq" aria-labelledby="faq-heading">
+        <h2 id="faq-heading">คำถามที่พบบ่อย</h2>
+        <div class="faq-grid">
+          <details><summary>ทำไมต้องรอคิว?</summary><p>ระบบทำงานทีละงานเพื่อประหยัดทรัพยากร คุณสามารถดูสถานะและจำนวนงานที่รออยู่ข้างหน้าได้หลังส่งลิงก์</p></details>
+          <details><summary>ผลลัพธ์ถูกเก็บไว้นานเท่าไร?</summary><p>เซิร์ฟเวอร์เก็บผลลัพธ์ไว้ 10 นาทีหลังงานเสร็จ ควรคัดลอก KEY ทันทีที่ได้รับผลลัพธ์</p></details>
+        </div>
+      </section>
+    </main>
+    <footer><span class="footer-brand">KEY Auto <span aria-hidden="true">·</span> Simple. Automatic.</span><span>ประมวลผลทีละงาน · เก็บผลลัพธ์ 10 นาที</span></footer>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const form = $('form');
+    const urlInput = $('url');
+    const submitBtn = $('submit');
+    const result = $('result');
+    const statusEl = $('status');
+    const extraEl = $('extra');
+    const logEl = $('log');
+
+    let pollTimer = null;
+    let currentJobId = null;
+
+    const STATUS_TEXT = {
+      queued: 'อยู่ในคิว กำลังรอคิวว่าง',
+      running: 'กำลังดึง KEY กรุณารอสักครู่',
+      done: 'ดึง KEY สำเร็จ!',
+      error: 'เกิดข้อผิดพลาด'
+    };
+
+    function setStats(s) {
+      $('s-online').textContent = s.online ?? 0;
+      $('s-running').textContent = s.running ?? 0;
+      $('s-queued').textContent = s.queued ?? 0;
+      $('s-success').textContent = s.success ?? 0;
+    }
+
+    async function loadStats() {
+      try {
+        const r = await fetch('/api/stats');
+        if (!r.ok) throw new Error('Stats unavailable');
+        setStats(await r.json());
+      } catch (e) { /* เงียบไว้ แล้วลองใหม่รอบถัดไป */ }
+    }
+
+    function log(line) {
+      logEl.textContent += line + '\n';
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function renderStatus(status, job) {
+      let inner = '';
+      if (status === 'queued') inner = '<div class="dot queued"></div>';
+      else if (status === 'running') inner = '<div class="spinner"></div>';
+      else if (status === 'done') inner = '<div class="dot done"></div>';
+      else inner = '<div class="dot error"></div>';
+
+      let text = STATUS_TEXT[status] || status;
+      if (status === 'queued' && job && job.waiting > 0) {
+        text += ` (มีคิวข้างหน้า ${job.waiting} งาน)`;
+      }
+      statusEl.innerHTML = inner + '<span></span>';
+      statusEl.lastChild.textContent = text;
+    }
+
+    function showKey(key) {
+      extraEl.innerHTML = '';
+      const box = document.createElement('div');
+      box.className = 'keybox';
+      const code = document.createElement('code');
+      code.textContent = key;
+      const copy = document.createElement('button');
+      copy.className = 'ghost';
+      copy.textContent = 'คัดลอก';
+      copy.onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(key);
+          copy.textContent = 'คัดลอกแล้ว ✓';
+          setTimeout(() => (copy.textContent = 'คัดลอก'), 1500);
+        } catch (e) {
+          copy.textContent = 'คัดลอกไม่สำเร็จ';
+        }
+      };
+      box.appendChild(code);
+      box.appendChild(copy);
+      extraEl.appendChild(box);
+    }
+
+    function showError(msg) {
+      extraEl.innerHTML = '';
+      const box = document.createElement('div');
+      box.className = 'errbox';
+      box.textContent = msg;
+      extraEl.appendChild(box);
+    }
+
+    function stopPolling() {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+      currentJobId = null;
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'ดึง KEY';
+    }
+
+    async function poll() {
+      if (!currentJobId) return;
+      try {
+        const r = await fetch('/api/key/' + currentJobId);
+        if (r.status === 404) {
+          stopPolling();
+          renderStatus('error', null);
+          showError('งานนี้หมดอายุหรือถูกลบไปแล้ว');
+          return;
+        }
+        const job = await r.json();
+        renderStatus(job.status, job);
+
+        if (job.status === 'done') {
+          showKey(job.key);
+          stopPolling();
+          loadStats();
+        } else if (job.status === 'error') {
+          showError(job.error || 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ');
+          stopPolling();
+          loadStats();
+        }
+      } catch (e) {
+        log('การเชื่อมต่อขัดข้อง กำลังลองใหม่...');
+      }
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = urlInput.value.trim();
+      if (!url) return;
+
+      result.classList.add('show');
+      extraEl.innerHTML = '';
+      logEl.textContent = '';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'กำลังส่ง...';
+      statusEl.innerHTML = '<div class="spinner"></div><span>กำลังส่งลิงก์เข้าสู่ระบบ...</span>';
+
+      try {
+        const r = await fetch('/api/key', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        const data = await r.json();
+
+        if (!r.ok) {
+          renderStatus('error', null);
+          showError(data.error || 'ส่งงานไม่สำเร็จ');
+          stopPolling();
+          return;
+        }
+
+        currentJobId = data.id;
+        log('สร้างงาน: ' + data.id);
+        renderStatus(data.status, data);
+        submitBtn.textContent = 'กำลังทำงาน...';
+
+        if (data.status === 'done' && data.key) {
+          showKey(data.key);
+          stopPolling();
+          loadStats();
+          return;
+        }
+
+        stopPollingKeepId();
+        pollTimer = setInterval(poll, 1500);
+        poll();
+      } catch (err) {
+        renderStatus('error', null);
+        showError('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');
+        stopPolling();
+      }
+    });
+
+    function stopPollingKeepId() {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+
+    loadStats();
+    setInterval(loadStats, 5000);
+  </script>
+</body>
+</html>

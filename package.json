@@ -1,0 +1,14 @@
+{
+  "name": "getkey-web",
+  "version": "1.0.0",
+  "description": "เว็บดึง Platoboost / Delta KEY พร้อมคิวทีละงาน",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "cli": "node getkey.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "puppeteer-core": "^22.0.0"
+  }
+}
